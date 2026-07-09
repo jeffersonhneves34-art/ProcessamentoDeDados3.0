@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Track ROV & TMS - Processador</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Plotly -->
+  <script src="https://cdn.plot.ly/plotly-2.26.1.min.js"></script>
+  <!-- SheetJS (XLSX) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- FileSaver (para baixar) -->
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Track ROV &amp; TMS — Processador (Parte 1 / 2 / 3)</h1>
+    <p class="subtitle">Cole ou arraste arquivos nos boxes; siga as instruções. Gerador de TRACK_ROV.txt, TRACK_TMS.txt, CONCATENADO.txt e planilha XLSX.</p>
+  </header>
+
+  <main>
+    <!-- Mensagens globais -->
+    <div id="messages" class="messages">Nenhum arquivo carregado.</div>
+
+    <!-- PARTE 01 -->
+    <section class="card">
+      <h2>PARTE 01 — Processar arquivo </h2>
+
+      <div class="input-row">
+        <div class="dropzone" id="dropzone1">Arraste/cole arquivo aqui (ou clique)<br><small>Suporta CSV com vírgula como separador.</small></div>
+        <input type="file" id="fileInput1" accept=".txt,.csv" style="display:none" />
+        <div class="controls">
+          <label>Time do TDP (HH:MM): <input id="tdpInput" type="time" step="60" /></label>
+          <label>Carimbo no gráfico(texto): <textarea id="stampInput" rows="3" placeholder="Digite o carimbo; pressione Ctrl+Enter ou Shift+Enter para nova linha"></textarea></label>
+          <button id="processBtn1">Processar Parte 01</button>
+          <button id="downloadROV" disabled>Baixar TRACK_ROV.txt</button>
+          <button id="downloadTMS" disabled>Baixar TRACK_TMS.txt</button>
+        </div>
+      </div>
+
+      <div id="part1-summary" class="summary"></div>
+
+      <div id="plot3d" class="plot3d" style="width:100%;height:600px;"></div>
+    </section>
+
+    <!-- PARTE 02 -->
+    <section class="card">
+      <h2>PARTE 02 — Concatenar linhas (XY=...)</h2>
+      <div class="input-row">
+        <div class="dropzone" id="dropzone2">Arraste/cole lista simples de X,Y,Z (uma linha por ponto)</div>
+        <input type="file" id="fileInput2" accept=".txt,.csv" style="display:none" />
+        <div class="controls">
+          <button id="processBtn2">Processar Parte 02</button>
+          <button id="downloadConcat" disabled>Baixar CONCATENADO.txt</button>
+        </div>
+      </div>
+      <div id="part2-summary" class="summary"></div>
+    </section>
+
+    <!-- PARTE 03 -->
+    <section class="card">
+      <h2>PARTE 03 — Distância TMS x ROV / Profundidades (agrupar a cada 17 min)</h2>
+      <div class="input-row">
+        <div class="dropzone" id="dropzone3">Arraste/cole arquivo (deve conter timestamps e colunas como Parte 01)</div>
+        <input type="file" id="fileInput3" accept=".txt,.csv" style="display:none" />
+        <div class="controls">
+          <button id="processBtn3">Processar Parte 03</button>
+          <button id="downloadXLSX" disabled>Baixar "PROFUNDIDADE TMS X ROV".xlsx</button>
+        </div>
+      </div>
+
+      <div id="part3-summary" class="summary"></div>
+      <div id="table3container" class="table-container"></div>
+      <div id="plotDepth" style="height:360px;"></div>
+    </section>
+
+    <footer>
+      <small>Desenvolvido — implementação de exemplo. Ajuste formatos de data/hora conforme necessário.</small>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
