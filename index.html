@@ -14,64 +14,63 @@
 </head>
 <body>
   <header>
-    <h1>Track ROV &amp; TMS — Processador (Parte 1 / 2 / 3)</h1>
-    <p class="subtitle">Cole ou arraste arquivos nos boxes; siga as instruções. Gerador de TRACK_ROV.txt, TRACK_TMS.txt, CONCATENADO.txt e planilha XLSX.</p>
+    <div class="header-badge">◉ ROV/TMS CONTROL DECK</div>
+    <h1>Track ROV &amp; TMS — Processor</h1>
+    <p class="subtitle">Cole ou arraste arquivos nos boxes; siga as instruções. Gerador de TRACK_ROV.txt, TRACK_TMS.txt, planilha XLSX e CONCATENADO.txt — download automático.</p>
   </header>
 
   <main>
     <!-- Mensagens globais -->
     <div id="messages" class="messages">Nenhum arquivo carregado.</div>
 
-    <!-- PARTE 01 -->
-    <section class="card">
-      <h2>PARTE 01 — Processar arquivo </h2>
+    <!-- PARTE 01 + 02 — Unificadas: mesmo arquivo de entrada, um único fluxo -->
+    <section class="card shared-card">
+      <h2><span class="chip">01 e 02</span> Tracks ROV/TMS &amp; Distância / Profundidade</h2>
+      <p class="hint">Um único arquivo alimenta as duas etapas: geração dos tracks <strong>ROV/TMS</strong> e o cálculo de <strong>distância/profundidade</strong> a cada 17 min. Carregue uma vez e processe tudo de uma vez.</p>
 
       <div class="input-row">
-        <div class="dropzone" id="dropzone1">Arraste/cole arquivo aqui (ou clique)<br><small>Suporta CSV com vírgula como separador.</small></div>
-        <input type="file" id="fileInput1" accept=".txt,.csv" style="display:none" />
-        <div class="controls">
+        <div class="dropzone" id="dropzoneShared">Arraste/cole o arquivo aqui (ou clique)<br><small>Suporta CSV com vírgula como separador.</small></div>
+        <input type="file" id="fileInputShared" accept=".txt,.csv" style="display:none" />
+      </div>
+      <div id="shared-summary" class="summary"></div>
+
+      <div class="split-row">
+        <div class="controls controls-half">
           <label>Time do TDP (HH:MM): <input id="tdpInput" type="time" step="60" /></label>
-          <label>Carimbo no gráfico(texto): <textarea id="stampInput" rows="3" placeholder="Digite o carimbo; pressione Ctrl+Enter ou Shift+Enter para nova linha"></textarea></label>
-          <button id="processBtn1">Processar Parte 01</button>
-          <button id="downloadROV" disabled>Baixar TRACK_ROV.txt</button>
-          <button id="downloadTMS" disabled>Baixar TRACK_TMS.txt</button>
+          <label>Carimbo no gráfico (texto): <textarea id="stampInput" rows="3" placeholder="Digite o carimbo; pressione Ctrl+Enter ou Shift+Enter para nova linha"></textarea></label>
+        </div>
+        <div class="controls controls-half controls-action">
+          <button id="processBtn1" class="btn-primary">Processar tudo</button>
+          <span class="btn-caption">Gera e baixa automaticamente: <strong>TRACK_ROV.txt</strong>, <strong>TRACK_TMS.txt</strong> e <strong>PROFUNDIDADE TMS X ROV.xlsx</strong></span>
         </div>
       </div>
 
       <div id="part1-summary" class="summary"></div>
-
       <div id="plot3d" class="plot3d" style="width:100%;height:600px;"></div>
-    </section>
 
-    <!-- PARTE 02 -->
-    <section class="card">
-      <h2>PARTE 02 — Concatenar linhas (XY=...)</h2>
-      <div class="input-row">
-        <div class="dropzone" id="dropzone2">Arraste/cole lista simples de X,Y,Z (uma linha por ponto)</div>
-        <input type="file" id="fileInput2" accept=".txt,.csv" style="display:none" />
-        <div class="controls">
-          <button id="processBtn2">Processar Parte 02</button>
-          <button id="downloadConcat" disabled>Baixar CONCATENADO.txt</button>
-        </div>
-      </div>
-      <div id="part2-summary" class="summary"></div>
-    </section>
-
-    <!-- PARTE 03 -->
-    <section class="card">
-      <h2>PARTE 03 — Distância TMS x ROV / Profundidades (agrupar a cada 17 min)</h2>
-      <div class="input-row">
-        <div class="dropzone" id="dropzone3">Arraste/cole arquivo (deve conter timestamps e colunas como Parte 01)</div>
-        <input type="file" id="fileInput3" accept=".txt,.csv" style="display:none" />
-        <div class="controls">
-          <button id="processBtn3">Processar Parte 03</button>
-          <button id="downloadXLSX" disabled>Baixar "PROFUNDIDADE TMS X ROV".xlsx</button>
-        </div>
+      <div class="subsection-divider">
+        <span class="chip chip-sm">02</span>
+        <span class="subsection-title">Distância TMS x ROV / Profundidades (agrupadas a cada 17 min)</span>
+        <button id="processBtn3" class="btn-secondary">Reprocessar somente XLSX</button>
       </div>
 
       <div id="part3-summary" class="summary"></div>
       <div id="table3container" class="table-container"></div>
       <div id="plotDepth" style="height:360px;"></div>
+    </section>
+
+    <!-- PARTE 03 -->
+    <section class="card">
+      <h2><span class="chip">03</span> Concatenar linhas (XY=...)</h2>
+      <div class="input-row">
+        <div class="dropzone" id="dropzone2">Arraste/cole lista simples de X,Y,Z (uma linha por ponto)</div>
+        <input type="file" id="fileInput2" accept=".txt,.csv" style="display:none" />
+        <div class="controls">
+          <button id="processBtn2">Processar Parte 03</button>
+          <button id="downloadConcat" disabled>Baixar CONCATENADO.txt</button>
+        </div>
+      </div>
+      <div id="part2-summary" class="summary"></div>
     </section>
 
     <footer>
