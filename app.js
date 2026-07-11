@@ -507,9 +507,9 @@ function plot3D(rovPts, tmsPts){
     paper_bgcolor:'#02060c', plot_bgcolor:'#02060c',
     font:{color:'#8ea3bd'},
     scene: {
-      xaxis:{title:'', backgroundcolor:'#02060c', gridcolor:'#16304f', showbackground:true},
-      yaxis:{title:'', backgroundcolor:'#02060c', gridcolor:'#16304f', showbackground:true},
-      zaxis:{title:'Height', backgroundcolor:'#02060c', gridcolor:'#16304f', showbackground:true}
+      xaxis:{title:'', backgroundcolor:'#02060c', showgrid:false, zeroline:false, showbackground:true, showticklabels:false},
+      yaxis:{title:'', backgroundcolor:'#02060c', showgrid:false, zeroline:false, showbackground:true, showticklabels:false},
+      zaxis:{title:'', backgroundcolor:'#02060c', showgrid:false, zeroline:false, showbackground:true, showticklabels:false}
     },
     margin:{l:0, r:0, b:0, t:40},
     legend:{
