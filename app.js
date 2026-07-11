@@ -16,9 +16,10 @@ const dlog = (...args) => { if (DEBUG) console.log(...args); };
 
 // ---------- Estado global da aplicação ----------
 const state = {
-  part1: { raw: null, parsed: null },
+  shared: { raw: null, fileName: null },     // arquivo compartilhado entre Parte 01 e Parte 03
+  part1: { parsed: null },
   part2: { raw: null, concat: null },
-  part3: { raw: null, table: null },
+  part3: { table: null },
   annotations: []
 };
 
@@ -37,7 +38,8 @@ const parseFloatOrNA = s => {
 function setMessage(text, isError=false){
   const m = $('messages');
   m.textContent = text;
-  m.style.color = isError ? '#ff9aa2' : '#bdbdbd';
+  m.style.color = isError ? '#ff6b6b' : '#f4f6f9';
+  m.style.borderLeftColor = isError ? '#ff6b6b' : '#d9a441';
 }
 
 // Drag & drop helper
@@ -257,23 +259,25 @@ function removeOutliersByLocalMedian(points, windowSize=11, threshold=5.0){
   return out;
 }
 
-// ---------- Parte 01 Implementation ----------
-makeDropzone($('dropzone1'), $('fileInput1'), async (file) => {
+// ---------- Arquivo de Entrada Compartilhado (Parte 01 + Parte 03) ----------
+makeDropzone($('dropzoneShared'), $('fileInputShared'), async (file) => {
   try{
-    setMessage('Lendo arquivo Parte 01...');
-    state.part1.raw = await readFileAsText(file);
-    $('part1-summary').textContent = `Arquivo carregado: ${file.name} — ${state.part1.raw.length} caracteres.`;
-    setMessage('Arquivo Parte 01 pronto. Aperte "Processar Parte 01".');
-    $('downloadROV').disabled = true;
-    $('downloadTMS').disabled = true;
-  }catch(err){ setMessage('Erro ao ler arquivo Parte 01', true); console.error(err); }
+    setMessage('Lendo arquivo de entrada...');
+    state.shared.raw = await readFileAsText(file);
+    state.shared.fileName = file.name;
+    $('shared-summary').textContent = `Arquivo carregado: ${file.name} — ${state.shared.raw.length} caracteres. Pronto para as Partes 01 e 03.`;
+    $('part1-summary').textContent = '';
+    $('part3-summary').textContent = '';
+    setMessage('Arquivo pronto. Use "Processar Parte 01" e/ou "Processar Parte 03".');
+  }catch(err){ setMessage('Erro ao ler o arquivo de entrada', true); console.error(err); }
 });
 
+// ---------- Parte 01 Implementation ----------
 $('processBtn1').addEventListener('click', ()=> {
-  if(!state.part1.raw){ setMessage('Carregue o arquivo primeiro antes de processar.', true); return; }
+  if(!state.shared.raw){ setMessage('Carregue o arquivo de entrada primeiro antes de processar.', true); return; }
   try{
     const tdpVal = $('tdpInput').value; // format "HH:MM"
-    processPart1(state.part1.raw, tdpVal);
+    processPart1(state.shared.raw, tdpVal);
   }catch(err){
     setMessage('Erro no processamento Parte 01: '+err.message, true);
     console.error(err);
@@ -442,10 +446,6 @@ async function processPart1(text, tdpHHMM){
   // Save to memory
   state.part1.parsed = {rovLines, tmsLines, rovFiltered, tmsFiltered, validRows};
 
-  // enable downloads
-  $('downloadROV').disabled = false;
-  $('downloadTMS').disabled = false;
-
   setMessage(`Processamento Parte 01 concluído. ROV pontos: ${rovFiltered.length}. TMS pontos: ${tmsFiltered.length}. Gerando gráfico 3D...`);
 
   // Plot 3D
@@ -453,20 +453,28 @@ async function processPart1(text, tdpHHMM){
 
   // update status
   $('part1-summary').textContent += ` (outliers removidos: ROV ${rovPoints.length - rovFiltered.length}, TMS ${tmsPoints.length - tmsFiltered.length})`;
+
+  // Download automático dos dois arquivos gerados pela Parte 01
+  downloadPart1Files();
+
+  // Como a Parte 03 usa o mesmo arquivo de entrada, processa e baixa o XLSX junto
+  try{
+    processPart3(text);
+    setMessage('Download automático concluído: TRACK_ROV.txt, TRACK_TMS.txt e PROFUNDIDADE TMS X ROV.xlsx.');
+  }catch(err){
+    console.error(err);
+    setMessage('Download automático concluído: TRACK_ROV.txt e TRACK_TMS.txt. (Falha ao gerar o XLSX da Parte 03: '+err.message+')', true);
+  }
 }
 
-// downloads Parte1
-$('downloadROV').addEventListener('click', ()=> {
-  if(!state.part1.parsed) { setMessage('Ainda não há dados processados para ROV.', true); return; }
-  const blob = new Blob([state.part1.parsed.rovLines.join('\n')], {type:'text/plain;charset=utf-8'});
-  saveAs(blob, 'TRACK_ROV.txt');
-});
-
-$('downloadTMS').addEventListener('click', ()=> {
-  if(!state.part1.parsed) { setMessage('Ainda não há dados processados para TMS.', true); return; }
-  const blob = new Blob([state.part1.parsed.tmsLines.join('\n')], {type:'text/plain;charset=utf-8'});
-  saveAs(blob, 'TRACK_TMS.txt');
-});
+// downloads automáticos Parte 01
+function downloadPart1Files(){
+  if(!state.part1.parsed) return;
+  const rovBlob = new Blob([state.part1.parsed.rovLines.join('\n')], {type:'text/plain;charset=utf-8'});
+  saveAs(rovBlob, 'TRACK_ROV.txt');
+  const tmsBlob = new Blob([state.part1.parsed.tmsLines.join('\n')], {type:'text/plain;charset=utf-8'});
+  saveAs(tmsBlob, 'TRACK_TMS.txt');
+}
 
 // 3D plotting using Plotly
 function plot3D(rovPts, tmsPts){
@@ -477,10 +485,10 @@ function plot3D(rovPts, tmsPts){
     mode: 'lines+markers',
     type: 'scatter3d',
     name: 'ROV',
-    marker: {size:2, color: 'yellow'},
-    line: {width:2, color: 'yellow'},
+    marker: {size:2, color: '#fceb03'},
+    line: {width:2, color: '#fceb03'},
     text: rovPts.map(p=>p.time.toLocaleString('pt-BR')),
-    hovertemplate: '<b>ROV</b><br>East: %{x:.2f}<br>North: %{y:.2f}<br>Height: %{z:.2f}<br>Tempo: %{text}<extra></extra>'
+    hovertemplate: '<b>ROV</b><br>Height: %{z:.2f}<br>Tempo: %{text}<extra></extra>'
   };
   const tmsTrace = {
     x: tmsPts.map(p=>p.x),
@@ -489,18 +497,19 @@ function plot3D(rovPts, tmsPts){
     mode: 'lines+markers',
     type: 'scatter3d',
     name: 'TMS',
-    marker: {size:2, color: 'red'},
-    line: {width:2, color: 'red'},
+    marker: {size:2, color: '#fd0000'},
+    line: {width:2, color: '#fd0000'},
     text: tmsPts.map(p=>p.time.toLocaleString('pt-BR')),
-    hovertemplate: '<b>TMS</b><br>East: %{x:.2f}<br>North: %{y:.2f}<br>Height: %{z:.2f}<br>Tempo: %{text}<extra></extra>'
+    hovertemplate: '<b>TMS</b><br>Height: %{z:.2f}<br>Tempo: %{text}<extra></extra>'
   };
 
   const layout = {
-    paper_bgcolor:'#000', plot_bgcolor:'#000',
+    paper_bgcolor:'#02060c', plot_bgcolor:'#02060c',
+    font:{color:'#8ea3bd'},
     scene: {
-      xaxis:{title:'East', backgroundcolor:'#000', gridcolor:'#222', showbackground:true},
-      yaxis:{title:'North', backgroundcolor:'#000', gridcolor:'#222', showbackground:true},
-      zaxis:{title:'Height', backgroundcolor:'#000', gridcolor:'#222', showbackground:true}
+      xaxis:{title:'', backgroundcolor:'#02060c', gridcolor:'#16304f', showbackground:true},
+      yaxis:{title:'', backgroundcolor:'#02060c', gridcolor:'#16304f', showbackground:true},
+      zaxis:{title:'Height', backgroundcolor:'#02060c', gridcolor:'#16304f', showbackground:true}
     },
     margin:{l:0, r:0, b:0, t:40},
     legend:{
@@ -613,18 +622,9 @@ $('downloadConcat').addEventListener('click', ()=> {
 });
 
 // ---------- Parte 03 Implementation ----------
-makeDropzone($('dropzone3'), $('fileInput3'), async (file) => {
-  try{
-    setMessage('Lendo arquivo Parte 03...');
-    state.part3.raw = await readFileAsText(file);
-    $('part3-summary').textContent = `Arquivo Parte 03 carregado: ${file.name} — ${state.part3.raw.length} caracteres.`;
-    setMessage('Arquivo Parte 03 pronto. Aperte "Processar Parte 03".');
-    $('downloadXLSX').disabled = true;
-  }catch(err){ setMessage('Erro ao ler arquivo Parte 03', true); console.error(err); }
-});
 $('processBtn3').addEventListener('click', ()=> {
-  if(!state.part3.raw){ setMessage('Carregue o arquivo Parte 03 primeiro antes de processar.', true); return; }
-  try{ processPart3(state.part3.raw); } catch(err){ setMessage('Erro Parte 03: '+err.message, true); console.error(err); }
+  if(!state.shared.raw){ setMessage('Carregue o arquivo de entrada primeiro antes de processar.', true); return; }
+  try{ processPart3(state.shared.raw); } catch(err){ setMessage('Erro Parte 03: '+err.message, true); console.error(err); }
 });
 
 function processPart3(text){
@@ -725,17 +725,19 @@ function processPart3(text){
 
   // Plot depths using Plotly: time vs depth (ROV and TMS)
   const times = selected.map(s => s.time);
-  const rovTrace = { x: times, y: selected.map(s=>s.heightROV), name:'ROV', mode:'lines+markers', type:'scatter' };
-  const tmsTrace = { x: times, y: selected.map(s=>s.heightTMS), name:'TMS', mode:'lines+markers', type:'scatter' };
-  const layout = { paper_bgcolor:'#000', plot_bgcolor:'#000', xaxis:{title:'Hora', tickformat:'%H:%M'}, yaxis:{title:'Profundidade'}, legend:{font:{color:'#ddd'}}, margin:{t:10} };
-  Plotly.newPlot('plotDepth', [rovTrace, tmsTrace], layout, {responsive:true});
+  const rovTrace = { x: times, y: selected.map(s=>s.heightTMS), name:'TMS', mode:'lines+markers', type:'scatter', line:{color:'#f4f807'}, marker:{color:'#f4f807'} };
+  const tmsTrace = { x: times, y: selected.map(s=>s.heightROV), name:'ROV', mode:'lines+markers', type:'scatter', line:{color:'#d30505'}, marker:{color:'#d30505'} };
+  const layout = { paper_bgcolor:'#02060c', plot_bgcolor:'#02060c', font:{color:'#8ea3bd'}, xaxis:{title:'Hora', tickformat:'%H:%M', gridcolor:'#16304f'}, yaxis:{title:'Profundidade', gridcolor:'#16304f'}, legend:{font:{color:'#ddd'}}, margin:{t:10} };
+  //Plotly.newPlot('plotDepth', [rovTrace, tmsTrace], layout, {responsive:true});
 
-  // enable download XLSX
-  $('downloadXLSX').disabled = false;
   state.part3.table = tableRows;
+
+  // Download automático da planilha XLSX
+   downloadPart3Xlsx();
 }
 
-$('downloadXLSX').addEventListener('click', ()=> {
+// download automático Parte 03
+function downloadPart3Xlsx(){
   const rows = state.part3.table;
   if(!rows || rows.length===0){ setMessage('Nenhuma tabela pronta para download XLSX.', true); return; }
   // create worksheet
@@ -745,8 +747,8 @@ $('downloadXLSX').addEventListener('click', ()=> {
   XLSX.utils.book_append_sheet(wb, ws, 'Profundidades');
   const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
   saveAs(new Blob([wbout],{type:'application/octet-stream'}), 'PROFUNDIDADE TMS X ROV.xlsx');
-  setMessage('Download XLSX iniciado.');
-});
+  setMessage('Download automático concluído: PROFUNDIDADE TMS X ROV.xlsx.');
+}
 
 // ---------- Inicializações ----------
 setMessage('Pronto. Carregue um arquivo em qualquer das áreas de entrada.');
